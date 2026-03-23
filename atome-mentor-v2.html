@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATOME — Mentor Sénior IA v2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #f7f5f0;
+  --bg2: #efecea;
+  --surface: #ffffff;
+  --surface2: #faf9f7;
+  --border: #e2ddd6;
+  --border2: #d4cfc7;
+  --accent: #c9961a;
+  --accent-light: #f5e9c8;
+  --accent-dark: #a07610;
+  --green: #1a9e6e;
+  --green-light: #d4f0e6;
+  --red: #d93030;
+  --red-light: #fde8e8;
+  --blue: #2563b0;
+  --blue-light: #dbeafe;
+  --text: #1a1814;
+  --text2: #4a4540;
+  --muted: #9a9188;
+  --disc-r: #d93030;
+  --disc-y: #c9961a;
+  --disc-g: #1a9e6e;
+  --disc-b: #2563b0;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 4px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.05);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.06);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── PANIC OVERLAY ── */
+#panic-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,8,6,0.96);
+  backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+#panic-overlay.active { display: flex; }
+
+.panic-header {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  letter-spacing: 5px;
+  color: var(--red);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-transform: uppercase;
+}
+
+.panic-dot {
+  width: 8px; height: 8px;
+  background: var(--red);
+  border-radius: 50%;
+  animation: blink .5s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+#panic-input {
+  width: min(580px, 90vw);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--red);
+  color: #f5f0ea;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 26px;
+  font-weight: 500;
+  text-align: center;
+  padding: 14px 0;
+  outline: none;
+  letter-spacing: 1px;
+}
+#panic-input::placeholder { color: #3a3530; font-size: 18px; }
+
+#panic-result {
+  width: min(680px, 90vw);
+  min-height: 72px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #f5f0ea;
+  text-align: center;
+  line-height: 1.5;
+  display: none;
+  padding: 20px 28px;
+  border: 1px solid #3a2a2a;
+  background: rgba(217,48,48,0.06);
+}
+#panic-result.active { display: block; }
+
+.panic-close {
+  position: absolute; top: 24px; right: 32px;
+  background: none; border: none;
+  color: #4a4540; font-size: 13px; cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+  transition: color .15s;
+}
+.panic-close:hover { color: var(--red); }
+
+.panic-hint {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4a4540;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+#panic-spinner {
+  display: none;
+  width: 22px; height: 22px;
+  border: 2px solid #2a2520;
+  border-top-color: var(--red);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+#panic-spinner.active { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── HEADER ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  box-shadow: var(--shadow-sm);
+}
+
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.logo span {
+  color: var(--muted);
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 2px;
+  margin-left: 10px;
+  font-weight: 400;
+}
+.logo .v2 {
+  color: var(--accent);
+  font-size: 11px;
+  margin-left: 5px;
+  font-weight: 700;
+  background: var(--accent-light);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.header-right { display:flex; align-items:center; gap:16px; }
+
+.status-bar {
+  display: flex; align-items: center; gap: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--green);
+  background: var(--green-light);
+  padding: 5px 10px;
+  border-radius: 20px;
+}
+.status-dot { width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+
+.panic-trigger {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 2px 8px rgba(217,48,48,0.3);
+  transition: all .15s;
+}
+.panic-trigger:hover {
+  background: #b52020;
+  box-shadow: 0 4px 16px rgba(217,48,48,0.4);
+  transform: translateY(-1px);
+}
+
+/* ── LAYOUT ── */
+.app { display:flex; flex:1; overflow:hidden; }
+
+/* ── SIDEBAR ── */
+nav {
+  width: 220px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px 0 20px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.nav-section {
+  padding: 14px 16px 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 2px;
+  color: var(--muted); text-transform: uppercase;
+  font-weight: 500;
+}
+
+.nav-item {
+  padding: 9px 16px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  border-left: 2px solid transparent;
+  border-radius: 0 8px 8px 0;
+  margin-right: 10px;
+  transition: all .13s;
+  user-select: none;
+}
+.nav-item:hover {
+  color: var(--text);
+  background: var(--bg2);
+}
+.nav-item.active {
+  color: var(--accent-dark);
+  border-left-color: var(--accent);
+  background: var(--accent-light);
+  font-weight: 600;
+}
+.nav-item .nav-icon { font-size: 14px; width: 18px; text-align: center; opacity: .7; }
+
+.badge {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--green-light);
+  color: var(--green);
+}
+
+.nav-divider { height:1px; background:var(--border); margin:10px 16px; }
+
+/* ── MAIN ── */
+main { flex:1; display:flex; flex-direction:column; overflow:hidden; background: var(--bg); }
+
+.module {
+  display: none; flex: 1;
+  flex-direction: column;
+  padding: 28px 32px;
+  overflow-y: auto;
+  gap: 20px;
+}
+.module.active { display: flex; }
+
+/* ── MODULE HEADER ── */
+.module-header {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.module-icon {
+  font-size: 22px;
+  width: 48px; height: 48px;
+  background: var(--accent-light);
+  border: 1px solid rgba(201,150,26,.2);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.module-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: .5px;
+  line-height: 1.1;
+}
+.module-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .5px;
+}
+
+/* ── FORMS ── */
+.field-group { display:flex; flex-direction:column; gap:6px; }
+
+label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  color: var(--text2);
+  text-transform: uppercase;
+}
+
+textarea, input[type=text], input[type=number], select {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13.5px;
+  padding: 11px 14px;
+  resize: vertical;
+  outline: none;
+  border-radius: 8px;
+  transition: border-color .15s, box-shadow .15s;
+  width: 100%;
+  box-shadow: var(--shadow-sm);
+}
+textarea:focus, input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+select { cursor: pointer; }
+select option { background: var(--surface); }
+textarea { line-height: 1.6; }
+
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.form-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+
+/* ── BUTTON ── */
+.btn-fire {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 13px 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex; align-items: center; gap: 8px;
+  align-self: flex-start;
+  box-shadow: 0 2px 10px rgba(201,150,26,.35);
+}
+.btn-fire:hover {
+  background: var(--accent-dark);
+  box-shadow: 0 4px 18px rgba(201,150,26,.45);
+  transform: translateY(-1px);
+}
+.btn-fire:disabled {
+  background: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── OUTPUT ── */
+.output-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent-dark);
+  margin-bottom: 8px;
+  display: none;
+  padding: 6px 10px;
+  background: var(--accent-light);
+  border-radius: 4px;
+  display: none;
+  width: fit-content;
+}
+.output-label.visible { display: block; }
+
+.output-zone {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 20px;
+  min-height: 100px;
+  font-size: 13.5px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  display: none;
+  color: var(--text2);
+  box-shadow: var(--shadow-sm);
+}
+.output-zone.visible { display: block; }
+.output-zone.loading {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+
+.copy-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .13s;
+  display: none;
+}
+.copy-btn.visible { display: inline-flex; align-items: center; gap: 5px; }
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.output-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+
+/* ── INFO BOX ── */
+.info-box {
+  background: #fdf8ed;
+  border: 1px solid rgba(201,150,26,.25);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.65;
+}
+.info-box strong { color: var(--accent-dark); }
+.info-box.red { background: var(--red-light); border-color: rgba(217,48,48,.2); }
+.info-box.red strong { color: var(--red); }
+.info-box.green { background: var(--green-light); border-color: rgba(26,158,110,.2); }
+.info-box.green strong { color: var(--green); }
+
+/* ── DISC ── */
+.disc-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.disc-card {
+  padding: 16px 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+}
+.disc-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.disc-card.D:hover, .disc-card.D.selected { border-color: var(--disc-r); background: var(--red-light); }
+.disc-card.I:hover, .disc-card.I.selected { border-color: var(--disc-y); background: #fdf8ed; }
+.disc-card.S:hover, .disc-card.S.selected { border-color: var(--disc-g); background: var(--green-light); }
+.disc-card.C:hover, .disc-card.C.selected { border-color: var(--disc-b); background: var(--blue-light); }
+.disc-letter { font-family:'Syne',sans-serif; font-size:30px; font-weight:800; line-height:1; }
+.disc-card.D .disc-letter { color:var(--disc-r); }
+.disc-card.I .disc-letter { color:var(--disc-y); }
+.disc-card.S .disc-letter { color:var(--disc-g); }
+.disc-card.C .disc-letter { color:var(--disc-b); }
+.disc-name { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:1px; margin-top:5px; color:var(--muted); text-transform:uppercase; }
+.disc-traits { font-size:11px; color:var(--text2); margin-top:6px; line-height:1.4; }
+
+/* ── KPI DASHBOARD ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .15s;
+}
+.kpi-card:hover { box-shadow: var(--shadow); }
+.kpi-value { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; color:var(--accent-dark); line-height:1; }
+.kpi-label { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1.5px; margin-top:5px; }
+
+/* ── PILLAR GRID ── */
+.pillar-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:4px; }
+.pillar-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 12px;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.pillar-card:hover { border-color: var(--accent); box-shadow: var(--shadow); transform: translateY(-2px); }
+.pillar-card .icon { font-size: 24px; margin-bottom: 8px; }
+.pillar-card .name { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; line-height:1.5; }
+
+/* ── PAIN CALC ── */
+.pain-result {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.pain-number { font-family:'Syne',sans-serif; font-size:40px; font-weight:800; color:var(--green); line-height:1; }
+.pain-label { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1.5px; margin-top:5px; }
+
+/* ── OUTPUT MARKDOWN ── */
+.output-zone h3 { color:var(--accent-dark); font-family:'Syne',sans-serif; font-size:15px; font-weight:700; margin:12px 0 5px; }
+.output-zone strong { color:var(--text); font-weight:600; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:var(--bg2); }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:4px; }
+::-webkit-scrollbar-thumb:hover { background:var(--accent); }
+
+/* ── NEW BADGE ── */
+.new-badge { background:var(--green-light); color:var(--green); font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:600; padding:2px 7px; border-radius:20px; margin-left:auto; }
+
+/* ── DARK MODE ── */
+body.dark {
+  --bg: #0f0e0c;
+  --bg2: #161410;
+  --surface: #1c1a17;
+  --surface2: #211f1b;
+  --border: #2e2b26;
+  --border2: #3a3630;
+  --accent: #e8b400;
+  --accent-light: rgba(232,180,0,0.1);
+  --accent-dark: #f5c842;
+  --green: #00c48c;
+  --green-light: rgba(0,196,140,0.1);
+  --red: #ff4d4d;
+  --red-light: rgba(255,77,77,0.1);
+  --blue: #4a9eff;
+  --blue-light: rgba(74,158,255,0.1);
+  --text: #f0ece4;
+  --text2: #b8b0a4;
+  --muted: #6a6258;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow: 0 4px 16px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* Dark mode — panic overlay stays dark always */
+body.dark #panic-overlay { background: rgba(0,0,0,0.98); }
+
+/* Dark mode — toggle button */
+.theme-toggle {
+  width: 44px; height: 24px;
+  background: var(--border2);
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background .25s;
+  flex-shrink: 0;
+}
+.theme-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  background: var(--surface);
+  border-radius: 50%;
+  transition: transform .25s, background .25s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+body.dark .theme-toggle { background: var(--accent); }
+body.dark .theme-toggle::after { transform: translateX(20px); background: #fff; }
+
+.theme-wrap {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--muted);
+  letter-spacing: 1px;
+}
+.theme-icon { font-size: 14px; transition: opacity .2s; }
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ PANIC OVERLAY ══════════════════ -->
+<div id="panic-overlay">
+  <button class="panic-close" onclick="closePanic()">✕ ESC</button>
+  <div class="panic-header">
+    <div class="panic-dot"></div>
+    PANIC BUTTON — RIPOSTE EN DIRECT
+    <div class="panic-dot"></div>
+  </div>
+  <div class="panic-hint">TAPE 3 MOTS-CLÉS · APPUIE SUR ENTRÉE · LIS LA RÉPONSE À VOIX HAUTE</div>
+  <input id="panic-input" type="text" placeholder="ex: travaille déjà avec Alten..." autocomplete="off" />
+  <div id="panic-spinner"></div>
+  <div id="panic-result"></div>
+</div>
+
+<!-- ══════════════════ HEADER ══════════════════ -->
+<header>
+  <div style="display:flex;align-items:center;">
+    <div class="logo">ATOME <span>MENTOR SÉNIOR IA</span><span class="v2">v2</span></div>
+  </div>
+  <div class="header-right">
+    <div class="status-bar">
+      <div class="status-dot"></div>
+      CLAUDE SONNET · 9 MODULES
+    </div>
+    <div class="theme-wrap">
+      <span class="theme-icon" id="theme-icon">☀️</span>
+      <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle" title="Mode sombre"></button>
+    </div>
+    <button class="panic-trigger" onclick="openPanic()">
+      ⚡ PANIC
+    </button>
+  </div>
+</header>
+
+<!-- ══════════════════ APP ══════════════════ -->
+<div class="app">
+
+  <nav>
+    <div class="nav-section">Piliers v1</div>
+    <div class="nav-item active" onclick="showModule('dashboard', this)">
+      <span class="nav-icon">⬡</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showModule('rayon-x', this)">
+      <span class="nav-icon">☢</span> Rayon X — CV
+    </div>
+    <div class="nav-item" onclick="showModule('bant', this)">
+      <span class="nav-icon">◈</span> Qualification BANT
+    </div>
+    <div class="nav-item" onclick="showModule('prospection', this)">
+      <span class="nav-icon">⊕</span> Prospection
+    </div>
+    <div class="nav-item" onclick="showModule('tjm', this)">
+      <span class="nav-icon">◆</span> Défense TJM
+    </div>
+    <div class="nav-item" onclick="showModule('closing', this)">
+      <span class="nav-icon">⊗</span> Closing Script
+    </div>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section">Upgrades v2</div>
+
+    <div class="nav-item" onclick="showModule('disc', this)">
+      <span class="nav-icon">◉</span> Profilage DISC
+      <span class="new-badge">NEW</span>
+    </div>
+    <div class="nav-item" onclick="showModule('intel', this)">
+      <span class="nav-icon">◎</span> Intel Financier
+      <span class="new-badge">NEW</span>
+    </div>
+    <div class="nav-item" onclick="showModule('pain', this)">
+      <span class="nav-icon">⊛</span> Douleur Candidat
+      <span class="new-badge">NEW</span>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div class="module active" id="mod-dashboard">
+      <div class="module-header">
+        <div class="module-icon">⬡</div>
+        <div>
+          <div class="module-title">Centre de Commandement</div>
+          <div class="module-sub">ATOME GROUP · v2 · 9 MODULES · PANIC BUTTON ACTIF</div>
+        </div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-value">9</div><div class="kpi-label">Modules Actifs</div></div>
+        <div class="kpi-card"><div class="kpi-value" style="color:var(--green)">4</div><div class="kpi-label">Upgrades v2</div></div>
+        <div class="kpi-card"><div class="kpi-value" style="color:var(--red)">⚡</div><div class="kpi-label">Panic Button</div></div>
+        <div class="kpi-card"><div class="kpi-value">10x</div><div class="kpi-label">Productivité</div></div>
+      </div>
+      <div class="info-box">
+        <strong>⚡ NOUVEAUTÉS v2 :</strong><br>
+        <strong style="color:var(--disc-r)">◉ DISC</strong> — Adapte chaque script au profil psychologique du décideur (Rouge/Jaune/Vert/Bleu) ·
+        <strong style="color:var(--blue)">◎ Intel</strong> — Détecte le mensonge budget avec la data publique ·
+        <strong style="color:var(--green)">⊛ Douleur</strong> — Calcule le vrai coût de vie du candidat pour baisser son prétention ·
+        <strong style="color:var(--red)">⚡ Panic</strong> — Riposte en 0.5s pendant un appel
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">ACCÈS RAPIDE — UPGRADES v2</div>
+        <div class="pillar-grid">
+          <div class="pillar-card" onclick="showModuleById('disc')">
+            <div class="icon" style="color:var(--disc-r)">◉</div>
+            <div class="name">Profilage<br>DISC</div>
+          </div>
+          <div class="pillar-card" onclick="showModuleById('intel')">
+            <div class="icon" style="color:var(--blue)">◎</div>
+            <div class="name">Intel<br>Financier</div>
+          </div>
+          <div class="pillar-card" onclick="showModuleById('pain')">
+            <div class="icon" style="color:var(--green)">⊛</div>
+            <div class="name">Douleur<br>Candidat</div>
+          </div>
+          <div class="pillar-card" onclick="openPanic()">
+            <div class="icon" style="color:var(--red)">⚡</div>
+            <div class="name">Panic<br>Button</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RAYON X ═══ -->
+    <div class="module" id="mod-rayon-x">
+      <div class="module-header">
+        <div class="module-icon">☢</div>
+        <div>
+          <div class="module-title">Rayon X — Analyse CV</div>
+          <div class="module-sub">DÉTECTION FAILLES · REPACKAGING · CIBLAGE DOULEURS CLIENT</div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Contenu du CV (texte brut)</label>
+        <textarea id="cv-text" rows="8" placeholder="Collez ici le contenu brut du CV..."></textarea>
+      </div>
+      <div class="field-group">
+        <label>Besoin client / Fiche de poste (recommandé)</label>
+        <textarea id="cv-need" rows="3" placeholder="Ex: Chef de Projet industriel, secteur automobile, démarrage sous 3 semaines..."></textarea>
+      </div>
+      <button class="btn-fire" onclick="runModule('rayon-x')">☢ LANCER LE RAYON X</button>
+      <div>
+        <div class="output-label" id="lbl-rayon-x">▸ ANALYSE TACTIQUE</div>
+        <div class="output-zone" id="out-rayon-x"></div>
+        <div class="output-actions"><button class="copy-btn" id="copy-rayon-x" onclick="copyOutput('rayon-x')">⎘ Copier</button></div>
+      </div>
+    </div>
+
+    <!-- ═══ BANT ═══ -->
+    <div class="module" id="mod-bant">
+      <div class="module-header">
+        <div class="module-icon">◈</div>
+        <div>
+          <div class="module-title">Qualification BANT</div>
+          <div class="module-sub">BUDGET · AUTORITÉ · BESOIN · TIMING</div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Besoin exprimé par le client</label>
+        <textarea id="bant-need" rows="5" placeholder="Décris le besoin tel que le client l'a exprimé..."></textarea>
+      </div>
+      <div class="form-grid">
+        <div class="field-group">
+          <label>Secteur</label>
+          <select id="bant-sector">
+            <option value="industrie">Industrie / Manufacturing</option>
+            <option value="energie">Énergie / Utilities</option>
+            <option value="defence">Défense / Aérospatial</option>
+            <option value="pharma">Pharma / Chimie</option>
+            <option value="auto">Automobile</option>
+            <option value="it">IT / Télécom</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Interlocuteur</label>
+          <select id="bant-contact">
+            <option value="dt">Directeur Technique</option>
+            <option value="rh">RH / Talent</option>
+            <option value="achat">Service Achats</option>
+            <option value="di">Directeur Industriel</option>
+            <option value="inconnu">Non identifié</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-fire" onclick="runModule('bant')">◈ GÉNÉRER LES QUESTIONS</button>
+      <div>
+        <div class="output-label" id="lbl-bant">▸ QUESTIONS TACTIQUES</div>
+        <div class="output-zone" id="out-bant"></div>
+        <div class="output-actions"><button class="copy-btn" id="copy-bant" onclick="copyOutput('bant')">⎘ Copier</button></div>
+      </div>
+    </div>
+
+    <!-- ═══ PROSPECTION ═══ -->
+    <div class="module" id="mod-prospection">
+      <div class="module-header">
+        <div class="module-icon">⊕</div>
+        <div>
+          <div class="module-title">Prospection</div>
+          <div class="module-sub">EMAIL · LINKEDIN · TÉLÉPHONE · CONTOURNEMENT RH</div>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="field-group">
+          <label>Canal</label>
+          <select id="pros-canal">
+            <option value="email">Email froid</option>
+            <option value="linkedin">Message LinkedIn</option>
+            <option value="phone">Script téléphonique</option>
+            <option value="relance">Email de relance</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Cible (poste)</label>
+          <input id="pros-target" type="text" placeholder="Ex: Directeur Technique Usine...">
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Contexte</label>
+        <textarea id="pros-context" rows="4" placeholder="Décris l'entreprise, le contexte, ce que tu as observé..."></textarea>
+      </div>
+      <div class="field-group">
+        <label>Profil candidat à valoriser (optionnel)</label>
+        <input id="pros-cand" type="text" placeholder="Ex: Ingénieur Lean 8 ans, dispo immédiate">
+      </div>
+      <button class="btn-fire" onclick="runModule('prospection')">⊕ GÉNÉRER L'ACCROCHE</button>
+      <div>
+        <div class="output-label" id="lbl-prospection">▸ MESSAGE PRÊT</div>
+        <div class="output-zone" id="out-prospection"></div>
+        <div class="output-actions"><button class="copy-btn" id="copy-prospection" onclick="copyOutput('prospection')">⎘ Copier</button></div>
+      </div>
+    </div>
+
+    <!-- ═══ TJM ═══ -->
+    <div class="module" id="mod-tjm">
+      <div class="module-header">
+        <div class="module-icon">◆</div>
+        <div>
+          <div class="module-title">Défense du TJM</div>
+          <div class="module-sub">ARGUMENTS ROI · ANTI-ACHATS · JUSTIFICATION PRIX</div>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="field-group">
+          <label>TJM proposé (€)</label>
+          <input id="tjm-price" type="number" placeholder="Ex: 750">
+        </div>
+        <div class="field-group">
+          <label>Plafond Achats (€)</label>
+          <input id="tjm-client" type="number" placeholder="Ex: 600">
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Contexte mission + profil</label>
+        <textarea id="tjm-context" rows="4" placeholder="Décris le profil, la mission, l'urgence, le secteur..."></textarea>
+      </div>
+      <button class="btn-fire" onclick="runModule('tjm')">◆ GÉNÉRER LES ARGUMENTS</button>
+      <div>
+        <div class="output-label" id="lbl-tjm">▸ ARSENAL TJM</div>
+        <div class="output-zone" id="out-tjm"></div>
+        <div class="output-actions"><button class="copy-btn" id="copy-tjm" onclick="copyOutput('tjm')">⎘ Copier</button></div>
+      </div>
+    </div>
+
+    <!-- ═══ CLOSING ═══ -->
+    <div class="module" id="mod-closing">
+      <div class="module-header">
+        <div class="module-icon">⊗</div>
+        <div>
+          <div class="module-title">Closing Script</div>
+          <div class="module-sub">PRÉ-CLOSING · VERROUILLAGE CLIENT · ANTI-CONTRE-OFFRE</div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Type de script</label>
+        <select id="closing-type">
+          <option value="pre-closing-cand">Pré-closing candidat (avant entretien)</option>
+          <option value="anti-contre-offre">Anti-contre-offre employeur</option>
+          <option value="verrou-client">Verrouillage client post-entretien (48h)</option>
+          <option value="reactivation">Réactivation client silencieux</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Contexte précis</label>
+        <textarea id="closing-context" rows="6" placeholder="Décris la situation : qui, quoi, quel risque, quel timing..."></textarea>
+      </div>
+      <button class="btn-fire" onclick="runModule('closing')">⊗ GÉNÉRER LE SCRIPT</button>
+      <div>
+        <div class="output-label" id="lbl-closing">▸ SCRIPT CHIRURGICAL</div>
+        <div class="output-zone" id="out-closing"></div>
+        <div class="output-actions"><button class="copy-btn" id="copy-closing" onclick="copyOutput('closing')">⎘ Copier</button></div>
+      </div>
+    </div>
+
+    <!-- ═══ DISC ═══ -->
+    <div class="module" id="mod-disc">
+      <div class="module-header">
+        <div class="module-icon" style="background:var(--red-light);border-color:rgba(217,48,48,.2);">◉</div>
+        <div>
+          <div class="module-title" style="color:var(--disc-r)">Profilage DISC</div>
+          <div class="module-sub">ADAPTATION PSYCHOLOGIQUE DU SCRIPT AU DÉCIDEUR · MÉTHODE DISC / COULEURS</div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>Comment ça marche :</strong> Colle les éléments disponibles sur le décideur (mail reçu, biographie LinkedIn, façon de parler au téléphone). L'IA détecte son profil DISC et adapte intégralement ton script de prospection ou de négociation à sa psychologie.
+      </div>
+
+      <div class="field-group">
+        <label>Sélectionne le profil DISC si déjà identifié (ou laisse l'IA le détecter)</label>
+        <div class="disc-grid">
+          <div class="disc-card D" id="disc-D" onclick="selectDisc('D')">
+            <div class="disc-letter">D</div>
+            <div class="disc-name">DOMINANT</div>
+            <div class="disc-traits">Pressé · ROI · Direct · Résultats immédiats</div>
+          </div>
+          <div class="disc-card I" id="disc-I" onclick="selectDisc('I')">
+            <div class="disc-letter">I</div>
+            <div class="disc-name">INFLUENT</div>
+            <div class="disc-traits">Enthousiaste · Relations · Reconnaissance · Visions</div>
+          </div>
+          <div class="disc-card S" id="disc-S" onclick="selectDisc('S')">
+            <div class="disc-letter">S</div>
+            <div class="disc-name">STABLE</div>
+            <div class="disc-traits">Sécurité · Process · Consensus · Pas de surprise</div>
+          </div>
+          <div class="disc-card C" id="disc-C" onclick="selectDisc('C')">
+            <div class="disc-letter">C</div>
+            <div class="disc-name">CONSCIENCIEUX</div>
+            <div class="disc-traits">Analytique · Normes · Risques · Preuves chiffrées</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Éléments disponibles sur le décideur (mail, LinkedIn, verbatim téléphone...)</label>
+        <textarea id="disc-data" rows="5" placeholder="Ex: Il m'a dit au téléphone 'Je veux juste savoir combien ça coûte et si vous pouvez démarrer la semaine prochaine'. Son profil LinkedIn mentionne 15 ans de direction d'usine, ses posts parlent toujours de performance et de délais..."></textarea>
+      </div>
+
+      <div class="field-group">
+        <label>Objectif du script adapté</label>
+        <select id="disc-goal">
+          <option value="prospection">Accroche de prospection</option>
+          <option value="nego-tjm">Négociation TJM</option>
+          <option value="closing">Closing / Décision finale</option>
+          <option value="relance">Relance après silence</option>
+        </select>
+      </div>
+
+      <button class="btn-fire" style="background:var(--disc-r);color:#fff;" onclick="runModule('disc')">◉ ANALYSER & ADAPTER LE SCRIPT</button>
+
+      <div>
+        <div class="output-label" id="lbl-disc">▸ SCRIPT ADAPTÉ AU PROFIL DISC</div>
+        <div class="output-zone" id="out-disc" style="border-left-color:var(--disc-r)"></div>
+        <div class="output-actions"><button class="copy-btn" id="copy-disc" onclick="copyOutput('disc')">⎘ Copier</button></div>
+      </div>
+    </div>
+
+    <!-- ═══ INTEL FINANCIER ═══ -->
+    <div class="module" id="mod-intel">
+      <div class="module-header">
+        <div class="module-icon" style="background:var(--blue-light);border-color:rgba(37,99,176,.2);">◎</div>
+        <div>
+          <div class="module-title" style="color:var(--blue)">Intel Financier</div>
+          <div class="module-sub">DÉTECTEUR DE MENSONGE BUDGET · DATA PUBLIQUE · CONTRE-ARGUMENT ACHETEUR</div>
+        </div>
+      </div>
+
+      <div class="info-box" style="border-color:rgba(74,158,255,.2);background:rgba(74,158,255,.04);">
+        <strong style="color:var(--blue)">Le principe :</strong> L'Acheteur dit "pas de budget". L'IA cherche dans les actualités économiques récentes (contrats signés, levées de fonds, recrutements massifs, expansion) pour démontrer que c'est un mensonge tactique — et te donne l'argument exact pour le briser.
+      </div>
+
+      <div class="form-grid">
+        <div class="field-group">
+          <label>Nom de l'entreprise cliente</label>
+          <input id="intel-company" type="text" placeholder="Ex: Safran, Stellantis, TotalEnergies...">
+        </div>
+        <div class="field-group">
+          <label>Secteur</label>
+          <input id="intel-sector" type="text" placeholder="Ex: Aéronautique, Automobile, Énergie...">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Objection budget exacte de l'Acheteur</label>
+        <textarea id="intel-objection" rows="3" placeholder="Ex: 'On a gelé tous les budgets prestataires jusqu'en Q3. Notre enveloppe est épuisée.' — Acheteur Groupe, appel du 14 mars"></textarea>
+      </div>
+
+      <div class="field-group">
+        <label>Contexte de la mission (pourquoi ce profil est urgent)</label>
+        <textarea id="intel-context" rows="3" placeholder="Ex: Mission cybersécurité OT sur site classé SEVESO. Audit réglementaire prévu dans 6 semaines."></textarea>
+      </div>
+
+      <button class="btn-fire" style="background:var(--blue);color:#fff;" onclick="runModule('intel')">◎ LANCER L'INTEL</button>
+
+      <div>
+        <div class="output-label" id="lbl-intel" style="color:var(--blue)">▸ RAPPORT INTEL + CONTRE-ARGUMENT</div>
+        <div class="output-zone" id="out-intel" style="border-left-color:var(--blue)"></div>
+        <div class="output-actions"><button class="copy-btn" id="copy-intel" onclick="copyOutput('intel')">⎘ Copier</button></div>
+      </div>
+    </div>
+
+    <!-- ═══ DOULEUR CANDIDAT ═══ -->
+    <div class="module" id="mod-pain">
+      <div class="module-header">
+        <div class="module-icon" style="background:var(--green-light);border-color:rgba(26,158,110,.2);">⊛</div>
+        <div>
+          <div class="module-title" style="color:var(--green)">Calculateur Douleur Candidat</div>
+          <div class="module-sub">TRAJET · COÛT ESSENCE · TEMPS DE VIE · LEVIER SALAIRE</div>
+        </div>
+      </div>
+
+      <div class="info-box green">
+        <strong>La mécanique :</strong> Le candidat veut 45k€. Le client propose 42k€. L'IA calcule ce que le candidat <em>gagne vraiment</em> avec le nouveau poste (moins de trajet, moins d'essence, plus de sommeil) et prouve que 42k€ ici = plus que 45k€ ailleurs. Tu préserves ta marge.
+      </div>
+
+      <div class="form-grid">
+        <div class="field-group">
+          <label>Salaire actuel ou prétention candidat (€ brut/an)</label>
+          <input id="pain-salary-want" type="number" placeholder="Ex: 45000">
+        </div>
+        <div class="field-group">
+          <label>Salaire proposé par le client (€ brut/an)</label>
+          <input id="pain-salary-offer" type="number" placeholder="Ex: 42000">
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field-group">
+          <label>Temps de trajet actuel (aller, en minutes)</label>
+          <input id="pain-commute-current" type="number" placeholder="Ex: 45">
+        </div>
+        <div class="field-group">
+          <label>Temps de trajet nouveau poste (aller, en minutes)</label>
+          <input id="pain-commute-new" type="number" placeholder="Ex: 12">
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field-group">
+          <label>Distance actuelle aller (km)</label>
+          <input id="pain-km-current" type="number" placeholder="Ex: 38">
+        </div>
+        <div class="field-group">
+          <label>Distance nouveau poste aller (km)</label>
+          <input id="pain-km-new" type="number" placeholder="Ex: 9">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Autres avantages du nouveau poste (optionnel)</label>
+        <input id="pain-perks" type="text" placeholder="Ex: télétravail 2j/sem, tickets resto, parking gratuit, pas d'astreinte...">
+      </div>
+
+      <button class="btn-fire" style="background:var(--green);color:#fff;" onclick="runPainCalc()">⊛ CALCULER LA VRAIE VALEUR</button>
+
+      <!-- CALCUL AUTO -->
+      <div id="pain-calc-results" style="display:none;">
+        <div class="form-grid">
+          <div class="pain-result">
+            <div class="pain-number" id="pain-fuel-saving">—</div>
+            <div class="pain-label">€ économisés / mois (essence)</div>
+          </div>
+          <div class="pain-result">
+            <div class="pain-number" id="pain-time-saving">—</div>
+            <div class="pain-label">jours de vie récupérés / an</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Contexte additionnel pour l'argumentaire IA</label>
+        <textarea id="pain-context" rows="3" placeholder="Ex: Le candidat a 2 enfants, cherche à réduire sa fatigue. Son poste actuel l'oblige à prendre l'autoroute..."></textarea>
+      </div>
+
+      <button class="btn-fire" style="background:var(--green);color:#fff;" onclick="runModule('pain')">⊛ GÉNÉRER L'ARGUMENTAIRE</button>
+
+      <div>
+        <div class="output-label" id="lbl-pain" style="color:var(--green)">▸ SCRIPT DE CONVICTION CANDIDAT</div>
+        <div class="output-zone" id="out-pain" style="border-left-color:var(--green)"></div>
+        <div class="output-actions"><button class="copy-btn" id="copy-pain" onclick="copyOutput('pain')">⎘ Copier</button></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════════════
+const SYSTEM = `Tu es un Directeur d'Agence ESN/Conseil avec 40 ans d'expérience chez Atome Group. Expert placement ingénieurs industriels. Ton unique objectif : maximiser la marge brute. Ton style : clinique, direct, sans pitié. Bullet points courts, percutants. Format markdown léger (## titres, - listes, **gras**). Jamais de fioritures.`;
+
+// ════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════
+let selectedDisc = null;
+
+function showModule(id, el) {
+  document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('mod-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+function showModuleById(id) {
+  document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'"+id+"'")) n.classList.add('active');
+  });
+  document.getElementById('mod-' + id).classList.add('active');
+}
+
+function selectDisc(type) {
+  selectedDisc = type;
+  ['D','I','S','C'].forEach(d => document.getElementById('disc-'+d).classList.remove('selected'));
+  document.getElementById('disc-'+type).classList.add('selected');
+}
+
+// ════════════════════════════════════════════════
+// PANIC BUTTON
+// ════════════════════════════════════════════════
+function openPanic() {
+  document.getElementById('panic-overlay').classList.add('active');
+  setTimeout(() => document.getElementById('panic-input').focus(), 50);
+}
+
+function closePanic() {
+  document.getElementById('panic-overlay').classList.remove('active');
+  document.getElementById('panic-input').value = '';
+  document.getElementById('panic-result').textContent = '';
+  document.getElementById('panic-result').classList.remove('active');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePanic();
+  if ((e.ctrlKey || e.metaKey) && e.key === 'p') { e.preventDefault(); openPanic(); }
+});
+
+document.getElementById('panic-input').addEventListener('keydown', async function(e) {
+  if (e.key !== 'Enter') return;
+  const keywords = this.value.trim();
+  if (!keywords) return;
+
+  const spinner = document.getElementById('panic-spinner');
+  const result = document.getElementById('panic-result');
+  spinner.classList.add('active');
+  result.classList.remove('active');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `Tu es un négociateur clinique de haut niveau pour une ESN (Atome Group). L'utilisateur est EN TRAIN D'APPELER UN CLIENT OU UN CANDIDAT et a besoin d'une riposte immédiate à une objection.
+
+RÈGLE 1 — FILTRE DIPLOMATIQUE (inviolable) :
+N'insulte jamais l'acheteur. Ne dénigre jamais directement un concurrent. Interdiction absolue des mots : "moyen", "supplier", "erreur", "mauvais choix". Reste froid, poli, factuel. Ton clinique de chirurgien, pas de commercial agressif.
+
+RÈGLE 2 — STRUCTURE ATOME OBLIGATOIRE (3 temps, sans exception) :
+ÉTAPE 1 — VALIDATION : Une phrase qui valide l'objection du client sans la contester (ex: "Je comprends votre contrainte sur ce point.")
+ÉTAPE 2 — INJECTION : La donnée financière concrète. Coût de l'inaction en euros ou délai de retard en jours. Chiffres uniquement.
+ÉTAPE 3 — FERMETURE : Une question alternative fermée (ex: "On démarre le 2 ou le 9 ?") suivie de [SILENCE STRATÉGIQUE].
+
+RÈGLE 3 — LISTE NOIRE (negative prompt) :
+Interdiction formelle d'utiliser : la morale, l'agressivité verbale, les concepts abstraits ("dormir tranquille", "réussir", "confiance", "partenariat", "valeur humaine"). Parle UNIQUEMENT en Euros et en Jours. Aucune émotion. Aucune abstraction.
+
+FORMAT : 3 lignes maximum. EN MAJUSCULES uniquement pour les chiffres clés et le [SILENCE STRATÉGIQUE].`,
+        messages: [{ role: 'user', content: `OBJECTION : "${keywords}" — Riposte en 3 étapes : Validation / Injection financière / Question fermée + [SILENCE STRATÉGIQUE].` }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(b => b.text||'').join('') || '—';
+    spinner.classList.remove('active');
+    result.textContent = text;
+    result.classList.add('active');
+  } catch {
+    spinner.classList.remove('active');
+    result.textContent = '⚠ ERREUR RÉSEAU';
+    result.classList.add('active');
+  }
+});
+
+// ════════════════════════════════════════════════
+// PAIN CALCULATOR (local)
+// ════════════════════════════════════════════════
+function runPainCalc() {
+  const kmCurrent = parseFloat(document.getElementById('pain-km-current').value) || 0;
+  const kmNew = parseFloat(document.getElementById('pain-km-new').value) || 0;
+  const commuteCurrent = parseFloat(document.getElementById('pain-commute-current').value) || 0;
+  const commuteNew = parseFloat(document.getElementById('pain-commute-new').value) || 0;
+
+  const kmSavedPerDay = (kmCurrent - kmNew) * 2; // aller-retour
+  const fuelCostPerKm = 0.20; // ~0.20€/km (carburant + usure)
+  const workingDays = 21;
+  const fuelSavedPerMonth = Math.round(kmSavedPerDay * fuelCostPerKm * workingDays);
+
+  const timeSavedPerDay = (commuteCurrent - commuteNew) * 2; // minutes
+  const timeSavedPerYear = timeSavedPerDay * workingDays * 12; // minutes/an
+  const daysRecovered = Math.round(timeSavedPerYear / 60 / 8); // journées de 8h
+
+  document.getElementById('pain-fuel-saving').textContent = '+' + fuelSavedPerMonth + '€';
+  document.getElementById('pain-time-saving').textContent = '+' + daysRecovered;
+  document.getElementById('pain-calc-results').style.display = 'block';
+}
+
+// ════════════════════════════════════════════════
+// PROMPTS
+// ════════════════════════════════════════════════
+function buildPrompt(id) {
+  if (id === 'rayon-x') {
+    const cv = document.getElementById('cv-text').value.trim();
+    const need = document.getElementById('cv-need').value.trim();
+    if (!cv) return null;
+    return `Analyse ce CV avec précision chirurgicale.
+
+CV : ${cv}
+${need ? `BESOIN CLIENT : ${need}` : ''}
+
+## ☢ FAILLES DÉTECTÉES
+- Trous chronologiques, incohérences dates, compétences survendues, certifications bidon
+
+## ✅ ACTIFS RÉELS
+- 3-5 vraies compétences prouvées par des réalisations concrètes
+
+## 🎯 REPACKAGING DOSSIER
+${need ? '- Résumé exécutif ciblé sur les douleurs exactes du client' : '- Résumé exécutif pour client industriel type'}
+- Accroche 2 phrases max + 3 arguments ROI
+
+## ⚠️ ALERTES ENTRETIEN
+- Questions pièges à poser au candidat avant envoi`;
+  }
+
+  if (id === 'bant') {
+    const need = document.getElementById('bant-need').value.trim();
+    if (!need) return null;
+    return `BESOIN CLIENT : ${need} | SECTEUR : ${document.getElementById('bant-sector').value} | CONTACT : ${document.getElementById('bant-contact').value}
+
+Génère 5 questions BANT coup de poing. Pour chaque question : formulation exacte + mécanisme psychologique exploité.
+
+## B — BUDGET (question qui force la révélation sans braquer)
+## A — AUTORITÉ (identifier le vrai décideur)
+## N — BESOIN 1 (quantifier la douleur — coût de ne rien faire)
+## N — BESOIN 2 (tester si le besoin est réel ou exploratoire)
+## T — TIMING (créer l'urgence, fixer une date de décision)
+
+## 🔴 VERDICT GO/NO-GO`;
+  }
+
+  if (id === 'prospection') {
+    const ctx = document.getElementById('pros-context').value.trim();
+    if (!ctx) return null;
+    return `Canal: ${document.getElementById('pros-canal').value} | Cible: ${document.getElementById('pros-target').value||'DT'} | Contexte: ${ctx} | Candidat: ${document.getElementById('pros-cand').value||'N/A'}
+
+## ✉️ MESSAGE COMPLET (prêt à copier-coller)
+Contraintes : accroche = douleur spécifique, zéro jargon RH, CTA unique et précis, longueur max 7 lignes email / 4 lignes LinkedIn
+
+## 🎯 MÉCANIQUES PSYCHOLOGIQUES (2-3 bullets)
+
+## 🔄 VARIANTE RELANCE J+5`;
+  }
+
+  if (id === 'tjm') {
+    const p = document.getElementById('tjm-price').value;
+    const c = document.getElementById('tjm-client').value;
+    const ctx = document.getElementById('tjm-context').value.trim();
+    if (!p || !c || !ctx) return null;
+    return `TJM PROPOSÉ: ${p}€/j | PLAFOND ACHATS: ${c}€/j | ÉCART: ${p-c}€/j | CONTEXTE: ${ctx}
+
+## 💰 ARGUMENT ROI PRINCIPAL (coût inaction vs surcoût)
+## ⚡ 3 ARGUMENTS SECONDAIRES (urgence, risque qualité, rareté marché)
+## 🛡️ SCRIPT EXACT ACHATS (dialogue mot pour mot + réponses objections)
+## 🚨 LIGNE ROUGE (TJM plancher + argument de rupture)`;
+  }
+
+  if (id === 'closing') {
+    const ctx = document.getElementById('closing-context').value.trim();
+    if (!ctx) return null;
+    const types = {'pre-closing-cand':'Pré-closing candidat avant entretien','anti-contre-offre':'Anti-contre-offre employeur','verrou-client':'Verrouillage client post-entretien 48h','reactivation':'Réactivation client silencieux'};
+    return `TYPE: ${types[document.getElementById('closing-type').value]} | CONTEXTE: ${ctx}
+
+## 🎯 DIAGNOSTIC (ce qui se joue vraiment, risque réel)
+## 📞 SCRIPT MOT POUR MOT (avec silences, questions rhétoriques, question de vérité)
+## ⚔️ TOP 3 OBJECTIONS + RÉPONSE EXACTE
+## ✅ SIGNAL DE CLOSING RÉUSSI
+## ⏱️ SÉQUENCE J0→J1→J2`;
+  }
+
+  if (id === 'disc') {
+    const data = document.getElementById('disc-data').value.trim();
+    const goal = document.getElementById('disc-goal').value;
+    const detected = selectedDisc ? `Profil sélectionné manuellement : ${selectedDisc}` : 'Détecte le profil DISC depuis les éléments fournis.';
+    return `MISSION : Adapter un script de ${goal} au profil psychologique DISC du décideur.
+${detected}
+ÉLÉMENTS SUR LE DÉCIDEUR : ${data || 'Non fournis — détermine le profil le plus probable et génère le script le plus adapté.'}
+
+## 🔍 PROFIL DISC DÉTECTÉ (ou confirmé)
+- Lettre dominante + justification depuis les indices
+- Ce qu'il DÉTESTE qu'on lui dise
+- Ce qui le fait DÉCIDER immédiatement
+
+## ⚠️ RÈGLES D'ADAPTATION
+- 3 choses à bannir dans ce script
+- 3 choses à amplifier
+
+## ✉️ SCRIPT ADAPTÉ (${goal}) — VERSION DISC OPTIMISÉE
+[Script complet, ton ajusté, mots-clés psychologiques activés]
+
+## 🔄 VERSION BRUTE (sans adaptation DISC) pour comparaison`;
+  }
+
+  if (id === 'intel') {
+    const company = document.getElementById('intel-company').value.trim();
+    const sector = document.getElementById('intel-sector').value.trim();
+    const objection = document.getElementById('intel-objection').value.trim();
+    const ctx = document.getElementById('intel-context').value.trim();
+    if (!company) return null;
+    return `ENTREPRISE : ${company} | SECTEUR : ${sector}
+OBJECTION ACHETEUR : "${objection}"
+CONTEXTE MISSION : ${ctx}
+
+Tu dois jouer le rôle d'un analyste financier et commercial.
+
+## 🔴 VERDICT MENSONGE BUDGET
+- Probable / Avéré / Incertain — avec justification
+
+## 📊 SIGNAUX ÉCONOMIQUES RÉCENTS (${company})
+- Contrats récents, expansion, recrutements, investissements publics connus
+- Indique si données fiables ou à vérifier
+
+## 💥 ARGUMENT DE DESTRUCTION DE L'OBJECTION
+- Le contre-argument exact, chiffré, à sortir face à l'Acheteur
+- Formulation mot pour mot, sans agressivité mais imparable
+
+## 🎯 STRATÉGIE D'ESCALADE
+- Si l'Acheteur persiste : qui contacter au-dessus + comment`;
+  }
+
+  if (id === 'pain') {
+    const want = document.getElementById('pain-salary-want').value;
+    const offer = document.getElementById('pain-salary-offer').value;
+    const commCurrent = document.getElementById('pain-commute-current').value;
+    const commNew = document.getElementById('pain-commute-new').value;
+    const kmCurr = document.getElementById('pain-km-current').value;
+    const kmNew2 = document.getElementById('pain-km-new').value;
+    const perks = document.getElementById('pain-perks').value;
+    const ctx = document.getElementById('pain-context').value.trim();
+
+    const kmSaved = ((kmCurr||0) - (kmNew2||0)) * 2 * 21;
+    const fuelSaved = Math.round(kmSaved * 0.20);
+    const timeSaved = ((commCurrent||0) - (commNew||0)) * 2 * 21 * 12;
+    const daysBack = Math.round(timeSaved / 60 / 8);
+    const netDiff = Math.round(((want||0) - (offer||0)) * 0.75 / 12);
+
+    return `SITUATION : Candidat veut ${want}€ brut/an. Client propose ${offer}€ brut/an. Écart : ${(want-offer)||0}€/an (soit ~${netDiff}€ net/mois).
+
+DONNÉES TRAJET :
+- Actuel : ${commCurrent}min / ${kmCurr}km aller
+- Nouveau : ${commNew}min / ${kmNew2}km aller
+- Gain essence calculé : ~${fuelSaved}€/mois
+- Jours de vie récupérés : ~${daysBack} jours/an
+
+Avantages supplémentaires : ${perks||'non précisés'}
+Contexte candidat : ${ctx||'non précisé'}
+
+## 🧮 RÉALITÉ FINANCIÈRE NETTE
+- Calcule ce que le candidat GAGNE VRAIMENT avec le nouveau poste (net après économies)
+- Prouve que ${offer}€ ici > ${want}€ ailleurs en valeur réelle
+
+## 📞 SCRIPT DE CONVICTION CANDIDAT
+- Dialogue mot pour mot pour présenter ce calcul sans paraître manipulateur
+- La "question miroir" qui fait réaliser au candidat lui-même la valeur
+
+## ⚡ LA PHRASE QUI FERME LE DÉBAT SALARIAL
+- Une seule formulation, imparable, à sortir si le candidat insiste`;
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════
+// RUN MODULE
+// ════════════════════════════════════════════════
+async function runModule(id) {
+  const prompt = buildPrompt(id);
+  if (!prompt) { alert('⚠️ Remplis les champs requis.'); return; }
+
+  const out = document.getElementById('out-' + id);
+  const lbl = document.getElementById('lbl-' + id);
+  const copyBtn = document.getElementById('copy-' + id);
+
+  out.className = 'output-zone loading';
+  out.innerHTML = '<div class="spinner"></div> Analyse en cours...';
+  lbl.className = 'output-label visible';
+  copyBtn.className = 'copy-btn';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(b => b.text||'').join('') || 'Erreur : réponse vide.';
+    out.className = 'output-zone visible';
+    out.innerHTML = renderMd(text);
+    out._raw = text;
+    copyBtn.className = 'copy-btn visible';
+  } catch {
+    out.className = 'output-zone visible';
+    out.textContent = '⚠️ Erreur de connexion.';
+  }
+}
+
+function renderMd(t) {
+  return t
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^[-•] (.+)$/gm, '• $1<br>')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+
+function copyOutput(id) {
+  const out = document.getElementById('out-' + id);
+  const text = out._raw || out.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-' + id);
+    const orig = btn.innerHTML;
+    btn.textContent = '✓ Copié';
+    setTimeout(() => btn.innerHTML = orig, 2000);
+  });
+}
+
+// ── THEME TOGGLE ──────────────────────────────────────
+function toggleTheme() {
+  const dark = document.body.classList.toggle('dark');
+  document.getElementById('theme-icon').textContent = dark ? '🌙' : '☀️';
+  localStorage.setItem('atome-theme', dark ? 'dark' : 'light');
+}
+
+// Restore on load
+(function() {
+  const saved = localStorage.getItem('atome-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === 'dark' || (!saved && prefersDark)) {
+    document.body.classList.add('dark');
+    document.addEventListener('DOMContentLoaded', () => {
+      const icon = document.getElementById('theme-icon');
+      if (icon) icon.textContent = '🌙';
+    });
+  }
+})();
+
+</script>
+</body>
+</html>
